@@ -1,0 +1,1293 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Frontal Activity Simulator | Aviation Weather Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --card: #ffffff;
+      --text: #1f242e;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #254b7c;
+      --sim-sky-top: #dbe8f7;
+      --sim-sky-bottom: #ebf2f8;
+      --sim-cold: #8faed3;
+      --sim-cold-deep: #6089b8;
+      --sim-warm: #f7b29e;
+      --sim-warm-deep: #db7556;
+      --sim-line: #5c79a3;
+      --sim-cloud: #fcfdfe;
+      --sim-cloud-shade: #d4dde8;
+      --sim-rain: #3c5d8a;
+      --sim-ground: #353842;
+      --sim-ground-top: #41a364;
+      --sim-label: #ffffff;
+      --sim-label-soft: #364860;
+      --sim-mol-cold: #a8d3fb;
+      --sim-mol-cold-edge: #3b69a1;
+      --sim-mol-warm: #d94d30;
+      --sim-mol-warm-edge: #8b2011;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 1.5rem 1rem 3rem;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .tag::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+    h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; }
+    .subtitle { color: var(--muted); margin-top: 0.5rem; font-size: 0.95rem; }
+    .badge {
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-radius: 4px;
+    }
+    .legend-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .legend-items { display: flex; flex-wrap: wrap; gap: 1rem; }
+    .legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .canvas-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: clamp(320px, 50vw, 480px);
+    }
+    .status-panel {
+      margin-top: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .status-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--primary);
+      margin-bottom: 0.35rem;
+    }
+    h2 { font-size: 1.25rem; font-weight: 600; }
+    .status-detail { color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem; }
+    .dir-badge {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--sim-label-soft);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1.5rem;
+      padding-top: 1.5rem;
+      align-items: flex-end;
+    }
+    .step-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+    .btn-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    button {
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.65rem 1.15rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.15s ease;
+    }
+    button:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    button.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+    button.btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+    button.btn-primary:hover:not(:disabled) { opacity: 0.92; }
+    @media (max-width: 680px) {
+      .status-panel, .controls { grid-template-columns: 1fr; }
+    }
+
+    .reference {
+      margin-top: 2.5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+    .reference .tag { margin-bottom: 0.4rem; }
+    .reference h2 { font-size: 1.5rem; letter-spacing: -0.01em; }
+    .reference .lead { color: var(--muted); font-size: 0.95rem; margin-top: 0.35rem; max-width: 64ch; }
+    .front-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .front-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.35rem 1.2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .front-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary);
+    }
+    .front-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .front-card h3 { font-size: 1.15rem; font-weight: 600; }
+    .front-sub { color: var(--muted); font-size: 0.85rem; margin-top: 0.1rem; }
+    .sym { flex-shrink: 0; }
+    .front-card dt {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-top: 1rem;
+    }
+    .front-card dd { font-size: 0.9rem; margin-top: 0.2rem; }
+    .ref-note { margin-top: 1rem; font-size: 0.78rem; color: var(--muted); }
+    @media (max-width: 820px) {
+      .front-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <div class="tag">Aviation Weather Lab <span>/ 01</span></div>
+        <h1>Frontal activity simulator</h1>
+        <p class="subtitle">Explore the motion, structure, and weather of cold, warm, occluded, and stationary fronts.</p>
+      </div>
+      <span class="badge">Cross-section view</span>
+    </header>
+
+    <div class="legend-row">
+      <div>ATMOSPHERE / SURFACE</div>
+      <div class="legend-items">
+        <span class="legend-item"><span class="dot" style="background:var(--sim-cold)"></span> Cold air</span>
+        <span class="legend-item"><span class="dot" style="background:var(--sim-warm)"></span> Warm air</span>
+        <span class="legend-item"><span class="dot" style="background:var(--sim-mol-cold); border:1px solid var(--sim-mol-cold-edge)"></span> Cold molecule</span>
+        <span class="legend-item"><span class="dot" style="background:var(--sim-mol-warm); border:1px solid var(--sim-mol-warm-edge)"></span> Warm molecule</span>
+      </div>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="simCanvas"></canvas>
+    </div>
+
+    <div class="status-panel">
+      <div>
+        <div id="statusTag" class="status-tag">Observation</div>
+        <h2 id="statusHeading">Choose a front to begin</h2>
+        <p id="statusDetail" class="status-detail">Select a scenario to see how two air masses meet.</p>
+      </div>
+      <div id="dirBadge" class="dir-badge" style="display:none;">→ Moving left to right</div>
+    </div>
+
+    <div class="controls">
+      <div>
+        <div class="step-title">01 / Select scenario</div>
+        <div class="btn-group">
+          <button id="btnCold" onclick="selectScenario('cold')">Cold front</button>
+          <button id="btnWarm" onclick="selectScenario('warm')">Warm front</button>
+          <button id="btnOccluded" onclick="selectScenario('occluded')">Occluded front</button>
+          <button id="btnStationary" onclick="selectScenario('stationary')">Stationary front</button>
+        </div>
+      </div>
+      <div>
+        <div class="step-title">02 / Observe</div>
+        <div class="btn-group">
+          <button id="btnPlay" class="btn-primary" disabled onclick="togglePlay()">▶ Play</button>
+          <button id="btnReset" disabled onclick="resetSim()" title="Reset">↺</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="reference">
+      <div class="tag">Reference</div>
+      <h2>What happens at each type of front</h2>
+      <p class="lead">A closer look at how each front forms, the weather it brings, what you would notice as it passes, and what it means for flying. The card for the scenario you have selected is highlighted.</p>
+
+      <div class="front-grid">
+        <article class="front-card" data-front="cold">
+          <div class="front-head">
+            <div>
+              <h3>Cold front</h3>
+              <div class="front-sub">Cold air displaces warm air</div>
+            </div>
+            <svg class="sym" width="96" height="20" viewBox="0 0 96 20" aria-hidden="true">
+              <line x1="2" y1="14" x2="94" y2="14" stroke="#2f5fb3" stroke-width="2.5"/>
+              <polygon points="12,14 26,14 19,3" fill="#2f5fb3"/>
+              <polygon points="40,14 54,14 47,3" fill="#2f5fb3"/>
+              <polygon points="68,14 82,14 75,3" fill="#2f5fb3"/>
+            </svg>
+          </div>
+          <dl>
+            <dt>How it works</dt>
+            <dd>Dense, cold air advances and wedges under the warmer air ahead of it, shoving the warm air upward along a steep boundary (roughly 1:50 to 1:100). Cold fronts are usually the fastest-moving fronts, often 20 to 35 knots, so the lifting is abrupt.</dd>
+            <dt>Weather</dt>
+            <dd>Towering cumulus and cumulonimbus build right along the boundary, producing a narrow band of heavy showers, thunderstorms, gusty winds, and sometimes squall lines or hail. Behind the front, skies clear quickly.</dd>
+            <dt>At the station</dt>
+            <dd>Temperature and dew point drop, pressure falls ahead of the front and then rises sharply, and the wind shifts clockwise (typically southwest to northwest). Visibility is poor in the rain, then improves fast.</dd>
+            <dt>Aviation impact</dt>
+            <dd>Turbulence, wind shear, and microbursts near thunderstorms, low ceilings in heavy precipitation, and possible icing aloft. The worst is usually short-lived, but gusty winds and bumpy, unstable air can linger behind the front.</dd>
+          </dl>
+        </article>
+
+        <article class="front-card" data-front="warm">
+          <div class="front-head">
+            <div>
+              <h3>Warm front</h3>
+              <div class="front-sub">Warm air overrides cold air</div>
+            </div>
+            <svg class="sym" width="96" height="20" viewBox="0 0 96 20" aria-hidden="true">
+              <line x1="2" y1="14" x2="94" y2="14" stroke="#c8452c" stroke-width="2.5"/>
+              <path d="M12 14 a7 7 0 0 1 14 0" fill="#c8452c"/>
+              <path d="M40 14 a7 7 0 0 1 14 0" fill="#c8452c"/>
+              <path d="M68 14 a7 7 0 0 1 14 0" fill="#c8452c"/>
+            </svg>
+          </div>
+          <dl>
+            <dt>How it works</dt>
+            <dd>Advancing warm air is lighter than the cold air it meets, so it cannot push it aside. Instead it glides up and over the cold air along a very gentle slope (roughly 1:150 to 1:300). Warm fronts move slowly, typically 10 to 25 knots, and their effects reach far ahead of the surface line.</dd>
+            <dt>Weather</dt>
+            <dd>Clouds thicken in sequence ahead of the front: cirrus, cirrostratus, altostratus, then nimbostratus with steady, widespread rain or snow, and low stratus or fog near the ground. Precipitation can last many hours over hundreds of miles. If the warm air is unstable, thunderstorms can hide inside the cloud deck.</dd>
+            <dt>At the station</dt>
+            <dd>Temperature and dew point rise, pressure falls steadily and then levels off, and the wind shifts clockwise (often southeast to south or southwest). Afterward the air turns warm, humid, and hazy.</dd>
+            <dt>Aviation impact</dt>
+            <dd>Prolonged IFR conditions with low ceilings and poor visibility, icing in cloud above the freezing level, and freezing rain or ice pellets where rain falls through sub-freezing air. Low-level wind shear is common just ahead of the surface front.</dd>
+          </dl>
+        </article>
+
+        <article class="front-card" data-front="occluded">
+          <div class="front-head">
+            <div>
+              <h3>Occluded front</h3>
+              <div class="front-sub">A cold front overtakes a warm front</div>
+            </div>
+            <svg class="sym" width="96" height="20" viewBox="0 0 96 20" aria-hidden="true">
+              <line x1="2" y1="14" x2="94" y2="14" stroke="#7a4fb0" stroke-width="2.5"/>
+              <polygon points="12,14 26,14 19,3" fill="#7a4fb0"/>
+              <path d="M40 14 a7 7 0 0 1 14 0" fill="#7a4fb0"/>
+              <polygon points="68,14 82,14 75,3" fill="#7a4fb0"/>
+            </svg>
+          </div>
+          <dl>
+            <dt>How it works</dt>
+            <dd>A cold front moves faster than the warm front ahead of it and eventually catches up, squeezing the warm air between them and lifting it completely off the ground. This marks the mature-to-dissipating stage of a mid-latitude low. In a cold-type occlusion, the air behind the cold front is colder than the air ahead of the warm front and undercuts it. In a warm-type occlusion, the air behind is milder and rides up over the cooler air ahead.</dd>
+            <dt>Weather</dt>
+            <dd>A blend of warm and cold front weather. Thick layered cloud and steady precipitation spread ahead of the occlusion, while heavier showers and thunderstorms can develop where the warm air is forced high. The worst weather is often near the occlusion itself, and it fades as the lifted warm air cools and dries out.</dd>
+            <dt>At the station</dt>
+            <dd>A stretch of steady rain gives way to a clockwise wind shift and rising pressure as the cold air arrives. The temperature change is often modest because the warm air is already aloft.</dd>
+            <dt>Aviation impact</dt>
+            <dd>Widespread low ceilings and reduced visibility, icing, and turbulence across a broad area, with embedded thunderstorms possible. Because the warm air is aloft, weather can persist even after the surface boundary has passed.</dd>
+          </dl>
+        </article>
+
+        <article class="front-card" data-front="stationary">
+          <div class="front-head">
+            <div>
+              <h3>Stationary front</h3>
+              <div class="front-sub">Neither air mass advances</div>
+            </div>
+            <svg class="sym" width="96" height="20" viewBox="0 0 96 20" aria-hidden="true">
+              <line x1="2" y1="10" x2="32" y2="10" stroke="#2f5fb3" stroke-width="2.5"/>
+              <line x1="32" y1="10" x2="62" y2="10" stroke="#c8452c" stroke-width="2.5"/>
+              <line x1="62" y1="10" x2="94" y2="10" stroke="#2f5fb3" stroke-width="2.5"/>
+              <polygon points="12,10 26,10 19,0" fill="#2f5fb3"/>
+              <path d="M40 10 a7 7 0 0 0 14 0" fill="#c8452c"/>
+              <polygon points="68,10 82,10 75,0" fill="#2f5fb3"/>
+            </svg>
+          </div>
+          <dl>
+            <dt>How it works</dt>
+            <dd>Cold and warm air press against each other, but neither is strong enough to displace the other, so the boundary barely moves (generally under about 5 knots). Winds on either side tend to blow roughly parallel to the front, in opposite directions.</dd>
+            <dt>Weather</dt>
+            <dd>Warm air gradually rides up over the cold air, much like a weak warm front, producing layered cloud, drizzle or steady rain, and fog along and on the cold side of the boundary. Pockets of stronger lift can trigger thunderstorms. Because nothing sweeps the front away, the same weather can sit over one area for days, raising the risk of flooding.</dd>
+            <dt>At the station</dt>
+            <dd>Little changes while the front hangs nearby, with temperature, wind, and pressure staying fairly steady. Eventually the front may weaken and fade, or a wave can form along it and turn it into a moving cold or warm front.</dd>
+            <dt>Aviation impact</dt>
+            <dd>Persistent IFR over a wide area, icing in cloud, and embedded convection. Pay close attention to the front's exact position, since a small shift can put an airport on either side of the cloud and rain.</dd>
+          </dl>
+        </article>
+      </div>
+
+      <p class="ref-note">Descriptions assume the Northern Hemisphere. Speeds, slopes, and wind shifts are typical values and vary with season and the strength of the system.</p>
+    </section>
+  </div>
+
+  <script>
+    function halton(index, base) {
+      let result = 0, fraction = 1;
+      while (index > 0) {
+        fraction /= base;
+        result += fraction * (index % base);
+        index = Math.floor(index / base);
+      }
+      return result;
+    }
+
+    const particles = Array.from({ length: 100 }, (_, i) => ({
+      x: halton(i + 1, 2),
+      y: halton(i + 1, 3),
+      offset: halton(i + 1, 5) * Math.PI * 2,
+      speed: 0.65 + halton(i + 1, 11) * 0.7,
+    }));
+
+    const palette = {
+      skyTop: "#dbe8f7", skyBottom: "#ebf2f8",
+      cold: "#8faed3", coldDeep: "#6089b8",
+      warm: "#f7b29e", warmDeep: "#db7556",
+      line: "#5c79a3", cloud: "#fcfdfe", cloudShade: "#d4dde8",
+      rain: "#3c5d8a", ground: "#353842", groundTop: "#41a364",
+      label: "#ffffff", labelSoft: "#364860",
+      molCold: "#a8d3fb", molColdEdge: "#3b69a1",
+      molWarm: "#d94d30", molWarmEdge: "#8b2011",
+    };
+
+    let scenario = null;
+    let status = "idle";
+    let progress = 0;
+    let previousTime = 0;
+
+    const canvas = document.getElementById("simCanvas");
+    const ctx = canvas.getContext("2d");
+    let width = 0, height = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    let statPhase = 0;
+    function getStatPhase(p) { return p < 0.22 ? 0 : p < 0.44 ? 1 : p < 0.78 ? 2 : 3; }
+    function ramp(p, a, b) {
+      const t = Math.max(0, Math.min(1, (p - a) / (b - a)));
+      return t * t * (3 - 2 * t);
+    }
+
+    function updateUI() {
+      document.getElementById("btnCold").classList.toggle("active", scenario === "cold");
+      document.getElementById("btnWarm").classList.toggle("active", scenario === "warm");
+      document.getElementById("btnOccluded").classList.toggle("active", scenario === "occluded");
+      document.getElementById("btnStationary").classList.toggle("active", scenario === "stationary");
+      document.querySelectorAll(".front-card").forEach((c) => c.classList.toggle("active", c.dataset.front === scenario));
+
+      const isPlaying = status === "playing";
+      document.getElementById("btnCold").disabled = isPlaying;
+      document.getElementById("btnWarm").disabled = isPlaying;
+      document.getElementById("btnOccluded").disabled = isPlaying;
+      document.getElementById("btnStationary").disabled = isPlaying;
+
+      const playBtn = document.getElementById("btnPlay");
+      playBtn.disabled = !scenario || isPlaying;
+      playBtn.textContent = status === "finished" ? "↻ Replay" : "▶ Play";
+      document.getElementById("btnReset").disabled = !scenario;
+
+      const tag = document.getElementById("statusTag");
+      tag.textContent = isPlaying ? "In motion" : status === "finished" ? "Complete" : "Observation";
+
+      const h = document.getElementById("statusHeading");
+      const d = document.getElementById("statusDetail");
+      const badge = document.getElementById("dirBadge");
+      badge.style.display = scenario ? "flex" : "none";
+      badge.textContent = scenario === "stationary" ? "↔ Little to no movement" : "→ Moving left to right";
+
+      if (!scenario) {
+        h.textContent = "Choose a front to begin";
+        d.textContent = "Select a scenario to see how two air masses meet.";
+      } else if (scenario === "cold") {
+        if (status === "ready") {
+          h.textContent = "Cold front ready";
+          d.textContent = "Cold, dense air approaches from the left. Press play to see it wedge beneath warmer air.";
+        } else if (status === "finished") {
+          h.textContent = "Cold front at the station";
+          d.textContent = "The curved boundary has lifted warm molecules into a thunderstorm.";
+        } else {
+          h.textContent = "Cold front advancing";
+          d.textContent = "Watch cold molecules push from left to right, lifting warm molecules into a thunderstorm.";
+        }
+      } else if (scenario === "warm") {
+        if (status === "ready") {
+          h.textContent = "Warm front ready";
+          d.textContent = "Warm air approaches from the left. Press play to see it rise gradually over cooler air.";
+        } else if (status === "finished") {
+          h.textContent = "Warm front at the station";
+          d.textContent = "Warm molecules have climbed above cold air and formed overcast clouds.";
+        } else {
+          h.textContent = "Warm front advancing";
+          d.textContent = "Watch warm molecules slide up the gentle slope and gather into overcast clouds.";
+        }
+      } else if (scenario === "occluded") {
+        if (status === "ready") {
+          h.textContent = "Occluded front ready";
+          d.textContent = "A faster cold front is closing in on a warm front. Press play to see it catch up.";
+        } else if (status === "finished") {
+          h.textContent = "Occlusion at the station";
+          d.textContent = "The cold air has lifted warm molecules into a thunderstorm and spreading cloud deck.";
+        } else {
+          h.textContent = "Cold front catching up";
+          d.textContent = "Watch the cold air force warm molecules upward into a growing thunderstorm.";
+        }
+      } else if (scenario === "stationary") {
+        if (status === "ready") {
+          h.textContent = "Stationary front ready";
+          d.textContent = "Cold and warm air approach from opposite sides. Press play to watch them meet and stall.";
+        } else if (status === "finished") {
+          h.textContent = "Stationary front holding steady";
+          d.textContent = "The air masses are locked in place, and the boundary keeps producing a mix of storm and overcast cloud.";
+        } else {
+          const copy = [
+            ["Air masses closing in", "Cold and warm air move toward each other and meet in the middle."],
+            ["Cold air pushes forward", "The cold air edges ahead slightly, forcing warm air high into a thunderstorm."],
+            ["Warm air pushes back", "The warm air edges ahead in turn, sliding up and over the cold air to form overcast cloud."],
+            ["Stalled boundary", "Neither mass wins. The front settles back in place while cloud lingers along it."]
+          ][getStatPhase(progress)];
+          h.textContent = copy[0];
+          d.textContent = copy[1];
+        }
+      }
+    }
+
+    function selectScenario(s) {
+      scenario = s;
+      statPhase = 0;
+      status = "ready";
+      progress = 0;
+      updateUI();
+    }
+
+    function togglePlay() {
+      statPhase = 0;
+      if (status === "finished") progress = 0;
+      status = "playing";
+      updateUI();
+    }
+
+    function resetSim() {
+      scenario = null;
+      status = "idle";
+      progress = 0;
+      updateUI();
+    }
+
+    function drawMolecule(cx, cy, fill, edge) {
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 4.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = edge;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    }
+
+    function drawUpArrow(x, tipY, length, color, alpha) {
+      const head = length * 0.42;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2.6;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(x, tipY + length);
+      ctx.lineTo(x, tipY + head * 0.7);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, tipY);
+      ctx.lineTo(x - head * 0.55, tipY + head);
+      ctx.lineTo(x + head * 0.55, tipY + head);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawSlantArrow(x, tipY, length, angle, color, alpha) {
+      const head = length * 0.42;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(x, tipY);
+      ctx.rotate(angle);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2.6;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(0, length);
+      ctx.lineTo(0, head * 0.7);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-head * 0.55, head);
+      ctx.lineTo(head * 0.55, head);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawCloudLabel(text, x, y, color) {
+      ctx.fillStyle = color;
+      ctx.font = "700 11px 'Instrument Sans', sans-serif";
+      ctx.textAlign = "center";
+      ctx.letterSpacing = "1px";
+      ctx.fillText(text, x, y);
+      ctx.letterSpacing = "0px";
+    }
+
+    function drawStormCloud(x, y, formation) {
+      const rising = [
+        [0, 62, 29], [-30, 58, 26], [31, 52, 27], [-18, 31, 28], [20, 24, 29],
+        [0, 0, 32], [-19, -25, 27], [13, -48, 30], [-8, -72, 27], [9, -95, 25],
+        [-26, -109, 23], [34, -111, 23], [0, -122, 29], [-53, -116, 23],
+        [56, -114, 22], [-78, -117, 19], [78, -116, 19]
+      ];
+      ctx.save();
+      ctx.globalAlpha = formation;
+      const count = Math.ceil(rising.length * formation);
+      for (let i = 0; i < count; i++) {
+        const [px, py, radius] = rising[i];
+        ctx.fillStyle = py > 20 ? palette.cloudShade : palette.cloud;
+        ctx.beginPath();
+        ctx.arc(x + px, y + py, radius * (0.65 + formation * 0.35), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawCloud(x, y, scale, formation) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.globalAlpha = formation;
+      const puffs = [[-25, 10, 15], [-8, -2, 22], [15, 2, 19], [33, 13, 13], [0, 18, 24]];
+      for (const [px, py, radius] of puffs) {
+        ctx.fillStyle = py > 12 ? palette.cloudShade : palette.cloud;
+        ctx.beginPath();
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawRain(x, y, strength) {
+      ctx.save();
+      ctx.globalAlpha = strength * 0.65;
+      ctx.strokeStyle = palette.rain;
+      ctx.lineWidth = 1.7;
+      for (let i = -3; i <= 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          const px = x + i * 12 + j * 4;
+          const py = y + j * 17;
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(px - 6, py + 12);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    function render(time) {
+      const delta = previousTime ? Math.min(time - previousTime, 60) : 0;
+      previousTime = time;
+
+      if (status === "playing") {
+        progress = Math.min(1, progress + delta / (scenario === "stationary" ? 30000 : 18000));
+        if (progress >= 1) {
+          status = "finished";
+          updateUI();
+        }
+      }
+
+      if (scenario === "stationary" && status === "playing") {
+        const ph = getStatPhase(progress);
+        if (ph !== statPhase) { statPhase = ph; updateUI(); }
+      }
+      const p = progress;
+      const groundY = height - 47;
+      const atmosphere = groundY - 36;
+      const cold = scenario === "cold";
+      const warm = scenario === "warm";
+      const occ = scenario === "occluded";
+      const stationary = scenario === "stationary";
+      const frontX = width * (stationary ? 0.42 : warm ? 0.34 + p * 0.1 : occ ? 0.3 + p * 0.32 : 0.12 + p * 0.5);
+      const wedge = Math.min(width * 0.38, 300);
+      const coldHeight = Math.min(atmosphere * 0.64, 230);
+      const warmReach = Math.min(width * 0.7, 520);
+      const warmHeight = Math.min(atmosphere * 0.83, 300);
+      const statHeight = coldHeight;
+      const meet = ramp(p, 0, 0.28);
+      const stormLevel = ramp(p, 0.22, 0.5);
+      const overcastLevel = ramp(p, 0.3, 0.6);
+      // The meeting point nudges right while the cold air pushes (storm builds), then left while the warm air pushes (overcast builds)
+      const frontShift = 0.035 * (ramp(p, 0.2, 0.4) - ramp(p, 0.42, 0.56)) - 0.035 * (ramp(p, 0.46, 0.66) - ramp(p, 0.78, 0.95));
+      const statCenter = 0.5 + frontShift;
+      const statColdEdge = width * (0.34 + meet * (statCenter - 0.34));
+      const statWarmEdge = width * (0.66 - meet * (0.66 - statCenter));
+      const statColdSpan = Math.min(width * 0.32, 280);
+      const statWarmSpan = Math.min(width * 0.32, 280);
+      const statColdX = (y) => statColdEdge - statColdSpan * Math.pow(Math.max(0, (groundY - y) / statHeight), 1.8);
+      const statWarmX = (y) => statWarmEdge + statWarmSpan * Math.pow(Math.max(0, (groundY - y) / statHeight), 1.8);
+
+      const boundaryColdX = (y) => frontX - wedge * Math.pow(Math.max(0, (groundY - y) / coldHeight), 1.8);
+      const boundaryWarmY = (x) => groundY - warmHeight * Math.pow(Math.max(0, Math.min(1, (x - frontX) / warmReach)), 0.85);
+
+      // Cold air domes: each curve keeps rising until it leaves the left edge, so there is no flat top
+      const coldTEnd = Math.min(Math.pow(frontX / wedge, 1 / 1.8), (groundY - 6) / coldHeight);
+      const coldPts = [];
+      for (let i = 1; i <= 64; i++) {
+        const t = (coldTEnd * i) / 64;
+        coldPts.push([frontX - wedge * Math.pow(t, 1.8), groundY - coldHeight * t]);
+      }
+      const coldEndY = groundY - coldHeight * coldTEnd;
+      const statColdTEnd = Math.min(Math.pow(statColdEdge / statColdSpan, 1 / 1.8), (groundY - 6) / statHeight);
+      const statColdPts = [];
+      for (let i = 1; i <= 64; i++) {
+        const t = (statColdTEnd * i) / 64;
+        statColdPts.push([statColdEdge - statColdSpan * Math.pow(t, 1.8), groundY - statHeight * t]);
+      }
+      const statColdEndY = groundY - statHeight * statColdTEnd;
+      const statWarmTEnd = Math.min(Math.pow((width - statWarmEdge) / statWarmSpan, 1 / 1.8), (groundY - 6) / statHeight);
+      const statWarmPts = [];
+      for (let i = 1; i <= 64; i++) {
+        const t = (statWarmTEnd * i) / 64;
+        statWarmPts.push([statWarmEdge + statWarmSpan * Math.pow(t, 1.8), groundY - statHeight * t]);
+      }
+      const statWarmEndY = groundY - statHeight * statWarmTEnd;
+
+      const sky = ctx.createLinearGradient(0, 0, 0, groundY);
+      sky.addColorStop(0, palette.skyTop);
+      sky.addColorStop(1, palette.skyBottom);
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, width, height);
+
+      // Atmospheric altitude gridlines
+      ctx.strokeStyle = palette.line;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.22;
+      for (let i = 1; i <= 3; i++) {
+        const y = groundY - (atmosphere * i) / 4;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      // Air mass fills
+      if (cold) {
+        const warmBg = ctx.createLinearGradient(0, groundY, width, 0);
+        warmBg.addColorStop(0, palette.warmDeep);
+        warmBg.addColorStop(1, palette.warm);
+        ctx.fillStyle = warmBg;
+        ctx.fillRect(0, 0, width, groundY);
+
+        const fill = ctx.createLinearGradient(0, groundY - coldHeight, frontX, groundY);
+        fill.addColorStop(0, palette.cold);
+        fill.addColorStop(1, palette.coldDeep);
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.moveTo(frontX, groundY);
+        for (const [qx, qy] of coldPts) ctx.lineTo(qx, qy);
+        ctx.lineTo(0, coldEndY);
+        ctx.lineTo(0, groundY);
+        ctx.closePath();
+        ctx.fill();
+      } else if (warm) {
+        const coldFill = ctx.createLinearGradient(0, groundY - warmHeight, 0, groundY);
+        coldFill.addColorStop(0, palette.cold);
+        coldFill.addColorStop(1, palette.coldDeep);
+        ctx.fillStyle = coldFill;
+        ctx.beginPath();
+        ctx.moveTo(frontX, groundY);
+        for (let i = 1; i <= 60; i++) {
+          const x = frontX + ((width - frontX) * i) / 60;
+          ctx.lineTo(x, boundaryWarmY(x));
+        }
+        ctx.lineTo(width, groundY);
+        ctx.closePath();
+        ctx.fill();
+
+        const fill = ctx.createLinearGradient(0, groundY, width, 0);
+        fill.addColorStop(0, palette.warmDeep);
+        fill.addColorStop(1, palette.warm);
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(frontX, groundY);
+        for (let i = 1; i <= 60; i++) {
+          const x = frontX + (warmReach * i) / 60;
+          ctx.lineTo(x, boundaryWarmY(x));
+        }
+        ctx.lineTo(width, boundaryWarmY(width));
+        ctx.lineTo(width, 0);
+        ctx.lineTo(0, 0);
+        ctx.closePath();
+        ctx.fill();
+      } else if (occ) {
+        const warmFill = ctx.createLinearGradient(0, groundY - warmHeight, 0, groundY);
+        warmFill.addColorStop(0, palette.warm);
+        warmFill.addColorStop(1, palette.warmDeep);
+        ctx.fillStyle = warmFill;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(width, 0);
+        ctx.lineTo(width, boundaryWarmY(width));
+        for (let i = 60; i >= 1; i--) {
+          const x = frontX + (warmReach * i) / 60;
+          ctx.lineTo(x, boundaryWarmY(x));
+        }
+        ctx.lineTo(frontX, groundY);
+        for (const [qx, qy] of coldPts) ctx.lineTo(qx, qy);
+        ctx.lineTo(0, coldEndY);
+        ctx.closePath();
+        ctx.fill();
+
+        const coldFill = ctx.createLinearGradient(0, groundY - coldHeight, frontX, groundY);
+        coldFill.addColorStop(0, palette.cold);
+        coldFill.addColorStop(1, palette.coldDeep);
+        ctx.fillStyle = coldFill;
+        ctx.beginPath();
+        ctx.moveTo(frontX, groundY);
+        for (const [qx, qy] of coldPts) ctx.lineTo(qx, qy);
+        ctx.lineTo(0, coldEndY);
+        ctx.lineTo(0, groundY);
+        ctx.closePath();
+        ctx.fill();
+
+        const coolFill = ctx.createLinearGradient(0, groundY - warmHeight, 0, groundY);
+        coolFill.addColorStop(0, palette.cold);
+        coolFill.addColorStop(1, palette.coldDeep);
+        ctx.fillStyle = coolFill;
+        ctx.globalAlpha = 0.75;
+        ctx.beginPath();
+        ctx.moveTo(frontX, groundY);
+        for (let i = 1; i <= 60; i++) {
+          const x = frontX + ((width - frontX) * i) / 60;
+          ctx.lineTo(x, boundaryWarmY(x));
+        }
+        ctx.lineTo(width, groundY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      } else if (stationary) {
+        const coldFill = ctx.createLinearGradient(0, groundY - statHeight, statColdEdge, groundY);
+        coldFill.addColorStop(0, palette.cold);
+        coldFill.addColorStop(1, palette.coldDeep);
+        ctx.fillStyle = coldFill;
+        ctx.beginPath();
+        ctx.moveTo(statColdEdge, groundY);
+        for (const [qx, qy] of statColdPts) ctx.lineTo(qx, qy);
+        ctx.lineTo(0, statColdEndY);
+        ctx.lineTo(0, groundY);
+        ctx.closePath();
+        ctx.fill();
+
+        const warmFill = ctx.createLinearGradient(width, groundY - statHeight, statWarmEdge, groundY);
+        warmFill.addColorStop(0, palette.warm);
+        warmFill.addColorStop(1, palette.warmDeep);
+        ctx.fillStyle = warmFill;
+        ctx.beginPath();
+        ctx.moveTo(statWarmEdge, groundY);
+        for (const [qx, qy] of statWarmPts) ctx.lineTo(qx, qy);
+        ctx.lineTo(width, statWarmEndY);
+        ctx.lineTo(width, groundY);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Molecules
+      let stormMolecules = 0;
+      if (scenario) {
+        for (let i = 0; i < particles.length; i++) {
+          const molecule = particles[i];
+          const coldMass = i < 45;
+          const wobble = status === "playing" ? Math.sin(time * 0.0018 * molecule.speed + molecule.offset) * 2 : 0;
+          let x, y, opacity = 1;
+
+          if (cold) {
+            if (coldMass) {
+              x = frontX - (0.05 + molecule.x * 0.9) * Math.max(frontX, 90);
+              const localHeight = coldHeight * Math.pow(Math.max(0, (frontX - x) / wedge), 0.56);
+              y = groundY - 12 - molecule.y * Math.max(10, localHeight - 27) + wobble;
+            } else {
+              const initialX = width * (0.18 + molecule.x * 0.55);
+              const lift = Math.max(0, Math.min(1, (frontX - initialX + 75) / 110));
+              const startY = groundY - 24 - molecule.y * atmosphere * 0.36;
+              const stormY = groundY - coldHeight * 0.76 + 55 - molecule.y * 145;
+              x = initialX + lift * (Math.min(width - 60, frontX + 45) + (molecule.x - 0.5) * 52 - initialX);
+              y = startY + lift * (stormY - startY) + wobble;
+              opacity = Math.max(0, Math.min(1, (0.96 - lift) / 0.18));
+              stormMolecules += 1 - opacity;
+            }
+          } else if (warm) {
+            if (coldMass) {
+              x = width * (0.12 + molecule.x * 0.85);
+              const slope = x > frontX ? boundaryWarmY(x) : groundY;
+              y = slope + 12 + molecule.y * Math.max(4, groundY - slope - 26) + wobble;
+            } else {
+              x = width * (0.025 + molecule.x * 0.28 + p * (0.46 + molecule.x * 0.19));
+              const slope = x > frontX ? boundaryWarmY(x) : groundY;
+              y = slope - 24 - molecule.y * 90 + wobble;
+            }
+          } else if (occ) {
+            if (coldMass) {
+              if (i < 30) {
+                x = frontX - (0.05 + molecule.x * 0.9) * Math.max(frontX, 90);
+                const localHeight = coldHeight * Math.pow(Math.max(0, (frontX - x) / wedge), 0.56);
+                y = groundY - 12 - molecule.y * Math.max(10, localHeight - 27) + wobble;
+              } else {
+                x = frontX + 45 + molecule.x * Math.max(80, width - frontX - 160) + p * 30;
+                const slope = boundaryWarmY(x);
+                y = slope + 12 + molecule.y * Math.max(4, groundY - slope - 26) + wobble;
+              }
+            } else {
+              // d: 0 = right at the occlusion point, 1 = far out along the remaining warm sector
+              const d = molecule.x;
+              const consumeZone = 0.4; // only the nearest fraction of the warm sector gets pinched into the storm
+              if (d < consumeZone) {
+                const localT = d / consumeZone;
+                const initialX = frontX + 20 + localT * 70;
+                const slopeStart = boundaryWarmY(initialX);
+                const startY = slopeStart - 22 - molecule.y * 55;
+                const lift = Math.max(0, Math.min(1, (p - 0.32 - localT * 0.28) / 0.35));
+                const stormX = Math.min(width - 65, frontX + 55);
+                const stormY = groundY - coldHeight * 0.78 + 46 - molecule.y * 135;
+                x = initialX + lift * (stormX + (molecule.x - 0.5) * 55 - initialX);
+                y = startY + lift * (stormY - startY) + wobble;
+                opacity = Math.max(0, Math.min(1, (0.9 - lift) / 0.25));
+                stormMolecules += 1 - opacity;
+              } else {
+                // Rides up the slope ahead of the pinch point, forming the overcast deck
+                const reachT = (d - consumeZone) / (1 - consumeZone);
+                x = frontX + 70 + reachT * Math.max(60, warmReach - 70);
+                const slope = boundaryWarmY(x);
+                y = slope - 20 - molecule.y * 70 + wobble;
+                opacity = Math.min(1, 0.4 + p * 3);
+              }
+            }
+          } else if (stationary) {
+            if (coldMass) {
+              x = statColdEdge - (0.05 + molecule.x * 0.9) * Math.max(statColdEdge, 90);
+              const localHeight = statHeight * Math.pow(Math.max(0, (statColdEdge - x) / statColdSpan), 0.56);
+              y = groundY - 12 - molecule.y * Math.max(10, localHeight - 27) + wobble;
+            } else {
+              const baseX = statWarmEdge + (0.05 + molecule.x * 0.9) * Math.max(width - statWarmEdge, 90);
+              const localHeight = statHeight * Math.pow(Math.max(0, (baseX - statWarmEdge) / statWarmSpan), 0.56);
+              const baseY = groundY - 12 - molecule.y * Math.max(10, localHeight - 27);
+              const d = molecule.x;
+              x = baseX;
+              y = baseY;
+              if (d < 0.3) {
+                // forced up high into the storm
+                const lift = Math.max(0, Math.min(1, stormLevel * 1.35 - (d / 0.3) * 0.35));
+                const sx = statWarmEdge + 70 + (molecule.x - 0.5) * 52;
+                const sy = groundY - statHeight * 0.76 + 55 - molecule.y * 145;
+                x = baseX + lift * (sx - baseX);
+                y = baseY + lift * (sy - baseY);
+                opacity = Math.max(0, Math.min(1, (0.9 - lift) / 0.25));
+                stormMolecules += 1 - opacity;
+              } else if (d < 0.75) {
+                // slides up and over the cold air
+                const sv = (d - 0.3) / 0.45;
+                const slide = Math.max(0, Math.min(1, overcastLevel * 1.3 - sv * 0.3));
+                const tx = statColdEdge - (0.04 + sv * 0.5) * statColdSpan;
+                const th = statHeight * Math.pow(Math.max(0, (statColdEdge - tx) / statColdSpan), 0.56);
+                const ty = groundY - th - 22 - molecule.y * 40;
+                x = baseX + slide * (tx - baseX);
+                y = baseY + slide * (ty - baseY);
+              }
+              y += wobble;
+            }
+          }
+
+          if (opacity > 0 && x > 8 && x < width - 8 && y > 12 && y < groundY - 9) {
+            ctx.globalAlpha = opacity;
+            drawMolecule(x, y, coldMass ? palette.molCold : palette.molWarm, coldMass ? palette.molColdEdge : palette.molWarmEdge);
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
+
+      // Front symbols and weather
+      if (cold) {
+        ctx.strokeStyle = palette.label;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(frontX, groundY);
+        for (const [qx, qy] of coldPts) ctx.lineTo(qx, qy);
+        ctx.stroke();
+
+        // Blue cold front triangles
+        for (let i = 0.14; i < coldTEnd - 0.08; i += 0.17) {
+          const y = groundY - coldHeight * i;
+          const x = boundaryColdX(y);
+          ctx.fillStyle = palette.label;
+          ctx.beginPath();
+          ctx.moveTo(x - 4, y - 8);
+          ctx.lineTo(x + 13, y);
+          ctx.lineTo(x - 4, y + 8);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        const cloudX = Math.min(width - 60, frontX + 45);
+        const cloudY = groundY - coldHeight * 0.76;
+
+        if (status !== "ready") {
+          const liftFade = Math.min(1, p / 0.1);
+          for (let k = 0; k < 5; k++) {
+            const i = 0.3 + k * 0.15;
+            const y = groundY - coldHeight * i;
+            const x = boundaryColdX(y) + 30 + k * 6;
+            if (x > width - 22) continue;
+            const bob = Math.sin(time * 0.0026 + k * 1.1) * 7;
+            drawUpArrow(x, y + bob, 26, palette.labelSoft, liftFade * (0.5 + 0.3 * Math.sin(time * 0.0034 + k * 1.4)));
+          }
+          for (let k = 0; k < 2; k++) {
+            const bob = Math.sin(time * 0.0031 + k * 2.2) * 6;
+            drawUpArrow(cloudX + (k === 0 ? -30 : 30), cloudY + 98 + bob, 30, palette.labelSoft, liftFade * (0.45 + 0.3 * Math.sin(time * 0.0038 + k)));
+          }
+        }
+
+        const formation = Math.min(1, stormMolecules / 30);
+        if (formation > 0) {
+          drawStormCloud(cloudX, cloudY, formation);
+          drawRain(cloudX, cloudY + 88, formation);
+          if (formation >= 0.95) drawCloudLabel("THUNDERSTORM", cloudX, Math.max(22, cloudY - 174), palette.labelSoft);
+        }
+      } else if (warm) {
+        ctx.strokeStyle = palette.label;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(frontX, groundY);
+        for (let i = 1; i <= 60; i++) {
+          const x = frontX + (warmReach * i) / 60;
+          ctx.lineTo(x, boundaryWarmY(x));
+        }
+        ctx.stroke();
+
+        for (let i = 0.18; i < 0.96; i += 0.16) {
+          const x = frontX + warmReach * i;
+          const y = boundaryWarmY(x);
+          ctx.strokeStyle = palette.label;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(x, y, 8, Math.PI, 0);
+          ctx.stroke();
+        }
+
+        if (status !== "ready") {
+          const slideFade = Math.min(1, p / 0.08);
+          for (let k = 0; k < 6; k++) {
+            const t = 0.12 + k * 0.15;
+            if (t > 0.94) continue;
+            const x = frontX + warmReach * t;
+            const y = boundaryWarmY(x) - 18;
+            const tilt = Math.atan(((warmHeight * 0.85) / warmReach) * Math.pow(t, -0.15));
+            const angle = Math.PI / 2 - tilt;
+            const bob = Math.sin(time * 0.0028 + k * 1.2) * 6;
+            drawSlantArrow(x, y + bob, 30, angle, palette.labelSoft, slideFade * (0.5 + 0.3 * Math.sin(time * 0.0036 + k * 1.3)));
+          }
+        }
+
+        const formation = Math.max(0, Math.min(1, (p - 0.2) / 0.48));
+        if (formation > 0) {
+          const cloudStart = frontX + warmReach * 0.12;
+          const cloudEnd = Math.min(width - 15, frontX + warmReach * 1.05);
+          for (let i = 0; i < 13; i++) {
+            const x = cloudStart + ((cloudEnd - cloudStart) * i) / 12;
+            if (x < width - 15) drawCloud(x, boundaryWarmY(x) - 37, 0.42 + 0.25 * formation, formation);
+          }
+          drawRain(Math.min(width - 30, frontX + warmReach * 0.4), boundaryWarmY(frontX + warmReach * 0.4) + 4, formation * 0.65);
+          if (formation >= 0.95) {
+            drawCloudLabel("OVERCAST CLOUDS", Math.min(width - 95, frontX + warmReach * 0.55), Math.max(28, boundaryWarmY(frontX + warmReach * 0.55) - 83), palette.labelSoft);
+          }
+        }
+      } else if (occ) {
+        ctx.strokeStyle = palette.label;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(frontX, groundY);
+        for (const [qx, qy] of coldPts) ctx.lineTo(qx, qy);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(frontX, groundY);
+        for (let i = 1; i <= 60; i++) {
+          const x = frontX + (warmReach * i) / 60;
+          ctx.lineTo(x, boundaryWarmY(x));
+        }
+        ctx.stroke();
+
+        for (let i = 0.16; i < coldTEnd - 0.08; i += 0.24) {
+          const y = groundY - coldHeight * i;
+          const x = boundaryColdX(y);
+          ctx.fillStyle = palette.label;
+          ctx.beginPath();
+          ctx.moveTo(x - 4, y - 8);
+          ctx.lineTo(x + 13, y);
+          ctx.lineTo(x - 4, y + 8);
+          ctx.closePath();
+          ctx.fill();
+        }
+        for (let i = 0.2; i < 0.96; i += 0.25) {
+          const x = frontX + warmReach * i;
+          const y = boundaryWarmY(x);
+          ctx.strokeStyle = palette.label;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(x, y, 8, Math.PI, 0);
+          ctx.stroke();
+        }
+
+        if (status !== "ready") {
+          const liftFade = Math.min(1, p / 0.1);
+          for (let k = 0; k < 4; k++) {
+            const x = frontX + 24 + k * 36;
+            if (x > width - 22) continue;
+            const y = boundaryWarmY(x) - 46 - k * 8;
+            const bob = Math.sin(time * 0.0027 + k * 1.3) * 7;
+            drawUpArrow(x, y + bob, 26, palette.labelSoft, liftFade * (0.5 + 0.3 * Math.sin(time * 0.0035 + k * 1.5)));
+          }
+        }
+
+        const overcastFormation = Math.max(0, Math.min(1, 0.15 + p / 0.4));
+        if (overcastFormation > 0) {
+          const cloudStart = frontX + 65;
+          const cloudEnd = Math.min(width - 15, frontX + 70 + Math.max(60, warmReach - 70));
+          for (let i = 0; i < 10; i++) {
+            const x = cloudStart + ((cloudEnd - cloudStart) * i) / 9;
+            if (x < width - 15) drawCloud(x, boundaryWarmY(x) - 34, 0.42 + 0.2 * overcastFormation, overcastFormation);
+          }
+          if (overcastFormation >= 0.95) {
+            const labelX = Math.min(width - 95, cloudStart + (cloudEnd - cloudStart) * 0.6);
+            drawCloudLabel("OVERCAST CLOUDS", labelX, Math.max(28, boundaryWarmY(labelX) - 80), palette.labelSoft);
+          }
+        }
+
+        const formation = Math.min(1, stormMolecules / 16);
+        if (formation > 0) {
+          const cloudX = Math.min(width - 65, frontX + 55);
+          const cloudY = groundY - coldHeight * 0.78;
+          drawStormCloud(cloudX, cloudY, formation);
+          drawRain(cloudX, cloudY + 88, formation);
+          if (formation >= 0.95) drawCloudLabel("THUNDERSTORM", cloudX, Math.max(22, cloudY - 174), palette.labelSoft);
+        }
+      } else if (stationary) {
+        ctx.strokeStyle = palette.label;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(statColdEdge, groundY);
+        for (const [qx, qy] of statColdPts) ctx.lineTo(qx, qy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(statWarmEdge, groundY);
+        for (const [qx, qy] of statWarmPts) ctx.lineTo(qx, qy);
+        ctx.stroke();
+
+        for (let i = 0.14; i < statColdTEnd - 0.08; i += 0.2) {
+          const y = groundY - statHeight * i;
+          const x = statColdX(y);
+          ctx.fillStyle = palette.label;
+          ctx.beginPath();
+          ctx.moveTo(x - 4, y - 8);
+          ctx.lineTo(x + 13, y);
+          ctx.lineTo(x - 4, y + 8);
+          ctx.closePath();
+          ctx.fill();
+        }
+        for (let i = 0.24; i < statWarmTEnd - 0.08; i += 0.2) {
+          const y = groundY - statHeight * i;
+          ctx.strokeStyle = palette.label;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(statWarmX(y), y, 8, Math.PI / 2, (3 * Math.PI) / 2);
+          ctx.stroke();
+        }
+
+        const stormX = Math.min(width - 60, statWarmEdge + 70);
+        const stormY = groundY - statHeight * 0.76;
+        if (stormLevel > 0.02) {
+          for (let k = 0; k < 4; k++) {
+            const yy = groundY - statHeight * (0.3 + k * 0.15);
+            const ax = (statColdX(yy) + statWarmX(yy)) / 2;
+            const bob = Math.sin(time * 0.0026 + k * 1.1) * 7;
+            drawUpArrow(ax, yy + bob, 26, palette.labelSoft, stormLevel * (0.5 + 0.3 * Math.sin(time * 0.0034 + k * 1.4)));
+          }
+        }
+        const formation = Math.min(1, stormMolecules / 10);
+        if (formation > 0) {
+          drawStormCloud(stormX, stormY, formation);
+          drawRain(stormX, stormY + 88, formation);
+          if (formation >= 0.95) drawCloudLabel("THUNDERSTORM", stormX, Math.max(22, stormY - 174), palette.labelSoft);
+        }
+
+        if (overcastLevel > 0.02) {
+          const coldH = (x) => statHeight * Math.pow(Math.max(0, Math.min(1, (statColdEdge - x) / statColdSpan)), 0.56);
+          for (let k = 0; k < 4; k++) {
+            const ax = statColdEdge - statColdSpan * (0.1 + k * 0.13);
+            const bob = Math.sin(time * 0.0028 + k * 1.2) * 6;
+            drawSlantArrow(ax, groundY - coldH(ax) - 40 + bob, 30, -0.9, palette.labelSoft, overcastLevel * (0.5 + 0.3 * Math.sin(time * 0.0036 + k * 1.3)));
+          }
+          for (let i = 0; i < 8; i++) {
+            const cx = statColdEdge - 10 - (i * statColdSpan * 0.72) / 7;
+            drawCloud(cx, Math.max(50, groundY - coldH(cx) - 50), 0.42 + 0.22 * overcastLevel, overcastLevel);
+          }
+          const rx = statColdEdge - statColdSpan * 0.3;
+          drawRain(rx, groundY - coldH(rx) - 20, overcastLevel * 0.55);
+          if (overcastLevel >= 0.95) drawCloudLabel("OVERCAST CLOUDS", rx, Math.max(28, groundY - coldH(rx) - 105), palette.labelSoft);
+        }
+      }
+
+      // Air mass labels
+      if (scenario) {
+        const labelY = Math.max(47, groundY - coldHeight * 0.38);
+        ctx.font = "700 12px 'Instrument Sans', sans-serif";
+        ctx.letterSpacing = "1.5px";
+        ctx.textAlign = "center";
+        if (occ) {
+          ctx.fillStyle = palette.label;
+          ctx.fillText("COLD AIR", Math.max(57, frontX * 0.45), groundY - 58);
+          ctx.fillText("COOL AIR", Math.min(width - 55, frontX + (width - frontX) * 0.62), groundY - 28);
+          ctx.fillStyle = palette.labelSoft;
+          ctx.fillText("WARM AIR (LIFTED)", width * 0.34, 76);
+        } else if (stationary) {
+          ctx.fillStyle = palette.label;
+          ctx.fillText("COLD AIR", Math.max(57, statColdEdge * 0.42), groundY - 58);
+          ctx.fillText("WARM AIR", Math.min(width - 62, statWarmEdge + (width - statWarmEdge) * 0.58), groundY - 58);
+        } else {
+          ctx.fillStyle = cold ? palette.label : palette.labelSoft;
+          ctx.fillText("COLD AIR", cold ? Math.max(57, frontX * 0.48) : Math.min(width - 55, frontX + warmReach * 0.6), cold ? groundY - 58 : width < 500 ? groundY - 28 : groundY - 65);
+          ctx.fillStyle = cold ? palette.labelSoft : palette.label;
+          ctx.fillText("WARM AIR", cold ? Math.min(width - 62, frontX + (width - frontX) * 0.57) : Math.max(62, frontX * 0.45), cold ? labelY - 35 : Math.max(55, groundY - warmHeight - 48));
+        }
+        ctx.letterSpacing = "0px";
+      }
+
+      // Ground and station marker
+      const stationX = stationary ? width * 0.5 : width * 0.62;
+      ctx.strokeStyle = palette.label;
+      ctx.globalAlpha = 0.5;
+      ctx.setLineDash([4, 5]);
+      ctx.beginPath();
+      ctx.moveTo(stationX, 38);
+      ctx.lineTo(stationX, groundY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = palette.ground;
+      ctx.fillRect(0, groundY, width, height - groundY);
+      ctx.fillStyle = palette.groundTop;
+      ctx.fillRect(0, groundY, width, 3);
+
+      ctx.fillStyle = palette.label;
+      ctx.beginPath();
+      ctx.arc(stationX, groundY, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.font = "500 10px 'Instrument Sans', sans-serif";
+      ctx.letterSpacing = "1px";
+      ctx.textAlign = "right";
+      if (width > 500) ctx.fillText("EARTH’S SURFACE", width - 16, groundY + 23);
+      ctx.letterSpacing = "0px";
+
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
+
+</body></html>
